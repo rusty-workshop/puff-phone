@@ -1,0 +1,84 @@
+package com.rusty.puff
+
+import android.Manifest
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
+import androidx.work.Constraints
+import androidx.work.CoroutineWorker
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.WorkerParameters
+import java.util.concurrent.TimeUnit
+
+/** Every 15 minutes (as often as Android allows): new things to notify about, and the widget. */
+class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
+    override suspend fun doWork(): Result {
+        val hub = Hub(applicationContext)
+        if (!hub.paired) return Result.success()
+        try {
+            checkEvents(applicationContext, hub)
+        } catch (e: Hub.Unpaired) {
+            return Result.success()
+        }
+        PuffWidget.refresh(applicationContext)
+        return Result.success()
+    }
+}
+
+object Sync {
+    fun schedule(context: Context) {
+        val req = PeriodicWorkRequestBuilder<SyncWorker>(15, TimeUnit.MINUTES)
+            .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()).build()
+        WorkManager.getInstance(context).enqueueUniquePeriodicWork("puff-sync", ExistingPeriodicWorkPolicy.KEEP, req)
+    }
+}
+
+/** Notifications for what echo-hub noticed (the first check only remembers where it's up to). */
+suspend fun checkEvents(context: Context, hub: Hub) {
+    val prefs = context.getSharedPreferences("puff", Context.MODE_PRIVATE)
+    val last = prefs.getInt("last_event", -1)
+    val reply = hub.events(last.coerceAtLeast(0)) ?: return
+    if (last >= 0) {
+        val wanted = hub.prefsOnHub() ?: emptyMap()
+        Notify.pick(reply.events, wanted).forEach { Notify.show(context, it) }
+    }
+    prefs.edit().putInt("last_event", reply.last).apply()
+}
+
+object Notify {
+    private val CHANNELS = listOf("letters" to "Letters", "stickers" to "Stickers", "cards" to "Holiday cards", "snow" to "The first snow")
+
+    fun channels(context: Context) {
+        val nm = context.getSystemService(NotificationManager::class.java)
+        CHANNELS.forEach { (id, name) -> nm.createNotificationChannel(NotificationChannel(id, name, NotificationManager.IMPORTANCE_DEFAULT)) }
+    }
+
+    /** The events worth showing: switched on (on the settings page or here), newest five at most. */
+    fun pick(events: List<HubEvent>, wanted: Map<String, Boolean>): List<HubEvent> =
+        events.filter { wanted[it.kind] != false && it.kind in CHANNELS.map { c -> c.first } }.takeLast(5)
+
+    fun show(context: Context, e: HubEvent) {
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return
+        channels(context)
+        val open = PendingIntent.getActivity(context, 0, Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            PendingIntent.FLAG_IMMUTABLE)
+        val n = NotificationCompat.Builder(context, e.kind)
+            .setSmallIcon(R.drawable.ic_notify)
+            .setContentTitle(e.title)
+            .setContentText(e.body)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(e.body))
+            .setContentIntent(open)
+            .setAutoCancel(true)
+            .build()
+        NotificationManagerCompat.from(context).notify(e.id, n)
+    }
+}
