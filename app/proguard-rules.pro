@@ -7,3 +7,6 @@
     kotlinx.serialization.KSerializer serializer(...);
 }
 -dontwarn org.slf4j.**
+# WorkManager's Room database is created by reflection (R8 full mode dropped its constructor: crash at startup).
+-keep class * extends androidx.room.RoomDatabase { <init>(); }
+-keep class androidx.work.impl.WorkDatabase_Impl { *; }
