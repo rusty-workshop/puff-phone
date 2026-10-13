@@ -26,6 +26,7 @@ import androidx.glance.layout.Column
 import androidx.glance.layout.Row
 import androidx.glance.layout.Spacer
 import androidx.glance.layout.fillMaxSize
+import androidx.glance.layout.height
 import androidx.glance.layout.padding
 import androidx.glance.layout.size
 import androidx.glance.layout.width
@@ -64,16 +65,90 @@ class PuffWidget : GlanceAppWidget() {
             if (b != null) {
                 p.putString("mood", if (b.asleep) "sleepy" else b.mood).putString("color", b.color).putBoolean("away", b.awayAt != null)
                     .putString("doing", b.doing.ifBlank { "Hanging out at home 🏠" })
+                    // Who's over, for the big widget ("name|#colour" each, ";" between).
+                    .putString("visitors", if (b.awayAt != null) "" else b.visitors.take(3).joinToString(";") { "${it.name.replace(";", "").replace("|", "")}|${it.color}" })
             }
             runCatching { hub.settings() }.getOrNull()?.blobName?.takeIf { it.isNotBlank() }?.let { p.putString("name", it) }
             p.apply()
             runCatching { PuffWidget().updateAll(context) }
+            runCatching { PuffBigWidget().updateAll(context) }
         }
     }
 }
 
 class PuffWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = PuffWidget()
+}
+
+/** The bigger widget: Puff and whoever's over, what they're up to, and buttons to poke Puff or invite a friend. */
+class PuffBigWidget : GlanceAppWidget() {
+    override suspend fun provideGlance(context: Context, id: GlanceId) {
+        val p = context.getSharedPreferences("puff_widget", Context.MODE_PRIVATE)
+        val name = p.getString("name", "Puff") ?: "Puff"
+        val doing = p.getString("doing", "Open the app to say hi") ?: ""
+        val puff = PuffBitmap.draw(240, p.getString("color", null), p.getString("mood", "neutral") ?: "neutral", p.getBoolean("away", false))
+        val visitors = p.getString("visitors", "").orEmpty().split(';').mapNotNull { v ->
+            v.split('|').takeIf { it.size == 2 && it[0].isNotBlank() }?.let { (n, c) -> n to PuffBitmap.draw(160, c, "happy", false) }
+        }
+        provideContent {
+            Column(GlanceModifier.fillMaxSize().background(ColorProvider(Pal.card)).cornerRadius(20.dp).padding(12.dp)
+                .clickable(actionStartActivity<MainActivity>())) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Image(ImageProvider(puff), contentDescription = name, modifier = GlanceModifier.size(84.dp))
+                    visitors.forEach { (n, bmp) ->
+                        Spacer(GlanceModifier.width(4.dp))
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Image(ImageProvider(bmp), contentDescription = n, modifier = GlanceModifier.size(52.dp))
+                            Text(n, style = TextStyle(color = ColorProvider(Pal.muted), fontSize = 11.sp), maxLines = 1)
+                        }
+                    }
+                }
+                Text(name, style = TextStyle(color = ColorProvider(Pal.amber), fontSize = 16.sp, fontWeight = FontWeight.Bold))
+                Text(doing, style = TextStyle(color = ColorProvider(Pal.ink), fontSize = 13.sp), maxLines = 2)
+                Spacer(GlanceModifier.height(8.dp))
+                Row {
+                    WidgetButton("👋 Poke", androidx.glance.appwidget.action.actionRunCallback<PokeAction>())
+                    Spacer(GlanceModifier.width(8.dp))
+                    WidgetButton("🚶 Invite a friend", androidx.glance.appwidget.action.actionRunCallback<InviteAction>())
+                }
+            }
+        }
+    }
+}
+
+@androidx.glance.GlanceComposable
+@androidx.compose.runtime.Composable
+private fun WidgetButton(label: String, action: androidx.glance.action.Action) {
+    Text(label, style = TextStyle(color = ColorProvider(Pal.night), fontSize = 13.sp, fontWeight = FontWeight.Bold),
+        modifier = GlanceModifier.background(ColorProvider(Pal.violet)).cornerRadius(16.dp).padding(horizontal = 12.dp, vertical = 6.dp).clickable(action))
+}
+
+class PuffBigWidgetReceiver : GlanceAppWidgetReceiver() {
+    override val glanceAppWidget: GlanceAppWidget = PuffBigWidget()
+}
+
+/** The big widget's buttons: straight to the Echo through echo-hub, then the widget redraws. */
+class PokeAction : androidx.glance.appwidget.action.ActionCallback {
+    override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: androidx.glance.action.ActionParameters) {
+        runCatching { Hub(context).act(kotlinx.serialization.json.buildJsonObject { put("action", kotlinx.serialization.json.JsonPrimitive("poke")) }) }
+        kotlinx.coroutines.delay(1_500)
+        PuffWidget.refresh(context)
+    }
+}
+
+class InviteAction : androidx.glance.appwidget.action.ActionCallback {
+    override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: androidx.glance.action.ActionParameters) {
+        runCatching {
+            Hub(context).act(kotlinx.serialization.json.buildJsonObject {
+                put("action", kotlinx.serialization.json.JsonPrimitive("invite"))
+                put("name", kotlinx.serialization.json.JsonPrimitive(""))
+                put("activity", kotlinx.serialization.json.JsonPrimitive(""))
+            })
+        }
+        // They take a couple of seconds to walk in.
+        kotlinx.coroutines.delay(5_000)
+        PuffWidget.refresh(context)
+    }
 }
 
 /** Puff drawn with plain Android graphics (widgets can't run Compose drawing). */

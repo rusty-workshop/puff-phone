@@ -34,5 +34,17 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/puff_widget" />
         </receiver>
+
+        <receiver
+            android:name=".PuffBigWidgetReceiver"
+            android:exported="true"
+            android:label="@string/big_widget_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/puff_widget_big" />
+        </receiver>
     </application>
 </manifest>
