@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -55,6 +56,8 @@ fun LiveScreen(model: PuffModel, onClose: () -> Unit) {
     var age by remember { mutableIntStateOf(0) }
     var note by remember { mutableStateOf("Connecting to the Echo…") }
     var box by remember { mutableStateOf(IntSize.Zero) }
+    var typing by remember { mutableStateOf(false) }
+    var typed by remember { mutableStateOf("") }
     // Sideways while it's open, back as it was after.
     DisposableEffect(Unit) {
         val activity = ctx as? Activity
@@ -107,7 +110,22 @@ fun LiveScreen(model: PuffModel, onClose: () -> Unit) {
                     .pointerInput(Unit) { detectTapGestures { onClose() } }.padding(horizontal = 14.dp, vertical = 6.dp))
             }
             Column(Modifier.align(Alignment.BottomStart).padding(10.dp)) {
-                Text("Tap to tap the Echo · swipe to change pages", color = Color.White.copy(alpha = 0.6f), fontSize = 12.sp)
+                if (typing) Row(verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.background(Pal.card, RoundedCornerShape(16.dp)).padding(6.dp)) {
+                    androidx.compose.material3.OutlinedTextField(typed, { typed = it.take(300) }, singleLine = true,
+                        placeholder = { Text("Type into the Echo's open box") }, modifier = Modifier.width(320.dp))
+                    Chip("Type", typed.isNotEmpty()) {
+                        if (typed.isNotEmpty()) { model.act("type", buildJsonObject { put("action", "type"); put("text", typed); put("enter", false) }, ""); typed = "" }
+                    }
+                    Chip("⏎ Enter") {
+                        model.act("type", buildJsonObject { put("action", "type"); put("text", typed); put("enter", true) }, ""); typed = ""
+                    }
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("⌨", color = Color.White, fontSize = 20.sp, modifier = Modifier.background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(50))
+                        .pointerInput(Unit) { detectTapGestures { typing = !typing } }.padding(horizontal = 12.dp, vertical = 4.dp))
+                    Text("  Tap to tap the Echo · swipe to change pages · ⌨ to type", color = Color.White.copy(alpha = 0.6f), fontSize = 12.sp)
+                }
             }
         }
     }

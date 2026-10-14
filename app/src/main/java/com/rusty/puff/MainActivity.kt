@@ -63,6 +63,7 @@ class MainActivity : ComponentActivity() {
             askNotify.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
         Notify.channels(this)
+        intent?.getStringExtra("open")?.let { Opening.what.value = it }
         Sync.schedule(this)
         setContent {
             MaterialTheme(colorScheme = Scheme) {
@@ -70,6 +71,11 @@ class MainActivity : ComponentActivity() {
                 if (!paired) PairScreen(model) else PuffApp(model)
             }
         }
+    }
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        intent.getStringExtra("open")?.let { Opening.what.value = it }
     }
 
     override fun onStart() {
@@ -90,7 +96,9 @@ class MainActivity : ComponentActivity() {
 private fun PuffApp(model: PuffModel) {
     var tab by rememberSaveable { mutableIntStateOf(0) }
     val toast by model.toast.collectAsStateWithLifecycle()
-    val tabs = listOf("🫧" to "Puff", "📖" to "World", "🏘️" to "Street", "🎮" to "Play", "⚙️" to "Echo")
+    val tabs = listOf("🫧" to "Puff", "📖" to "World", "🏘️" to "Street", "🎮" to "Play", "🎛️" to "Remote", "⚙️" to "Echo")
+    // Opened from a quick tile: the announce box or the live screen.
+    val opening by Opening.what.collectAsStateWithLifecycle()
     Scaffold(
         containerColor = Pal.night,
         bottomBar = {
@@ -109,7 +117,12 @@ private fun PuffApp(model: PuffModel) {
                 1 -> WorldScreen(model)
                 2 -> StreetScreen(model)
                 3 -> PlayScreen(model)
+                4 -> RemoteScreen(model)
                 else -> EchoScreen(model)
+            }
+            when (opening) {
+                "announce" -> AnnounceDialog(model) { Opening.what.value = null }
+                "live" -> LiveScreen(model) { Opening.what.value = null }
             }
             toast?.let {
                 Column(Modifier.align(Alignment.BottomCenter).padding(16.dp).background(Pal.card, RoundedCornerShape(14.dp)).padding(horizontal = 16.dp, vertical = 10.dp)) {
@@ -118,4 +131,9 @@ private fun PuffApp(model: PuffModel) {
             }
         }
     }
+}
+
+/** What a quick tile asked the app to open ("announce" or "live"), until it's closed. */
+object Opening {
+    val what = kotlinx.coroutines.flow.MutableStateFlow<String?>(null)
 }

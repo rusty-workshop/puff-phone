@@ -140,4 +140,7 @@ class Hub(context: Context) {
     }
 
     suspend fun appUrl() = base() + "/phone-app/app.apk"
+
+    /** The Echo's full settings page (it's on the same address). */
+    suspend fun settingsUrl() = base() + "/settings"
 }

@@ -40,7 +40,12 @@ data class BlobState(
     val vote: List<VoteAct> = emptyList(),
     val visitors: List<Visitor> = emptyList(),
     val friend: String? = null,
+    val laptop: LaptopNow? = null,
 )
+
+@Serializable data class LaptopNow(val playing: Boolean = false, val track: String = "", val artist: String = "", val battery: Int? = null)
+@Serializable data class Shortcut(val key: String, val label: String)
+@Serializable data class RemoteInfo(val tv: Boolean = false, val laptop: Boolean = false, val shortcuts: List<Shortcut> = emptyList())
 
 // -- Puff's world (GET /phone/world) ----------------------------------------------------------
 
@@ -55,6 +60,7 @@ data class Journal(
     val street: Street = Street(),
     val catalog: Catalog = Catalog(),
     @SerialName("friend_album") val friendAlbum: List<AlbumNote> = emptyList(),
+    val remote: RemoteInfo = RemoteInfo(),
 )
 
 @Serializable data class DiaryEntry(val date: String, val text: String)

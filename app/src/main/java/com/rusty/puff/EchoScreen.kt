@@ -8,6 +8,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -53,6 +54,7 @@ fun EchoScreen(model: PuffModel) {
     var update by remember { mutableStateOf<AppRelease?>(null) }
     var photo by remember { mutableStateOf<Uri?>(null) }
     var live by remember { mutableStateOf(false) }
+    var allSettings by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         notify = runCatching { model.hub.prefsOnHub() }.getOrNull()
         update = runCatching { model.hub.latestApp() }.getOrNull()?.takeIf { it.code > BuildConfig.VERSION_CODE }
@@ -77,8 +79,12 @@ fun EchoScreen(model: PuffModel) {
         }
 
         Section("See the Echo")
-        Chip("📺 Live screen (tap and swipe through)", true) { live = true }
+        ChipRow {
+            Chip("📺 Live screen", true) { live = true }
+            Chip("⚙️ All Echo settings", true) { allSettings = true }
+        }
         if (live) LiveScreen(model) { live = false }
+        if (allSettings) SettingsWeb(model) { allSettings = false }
 
         Section("Send a photo")
         if (photo == null) Chip("🖼️ Pick a photo") { pick.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }
@@ -178,4 +184,45 @@ private fun shrink(ctx: android.content.Context, uri: Uri): ByteArray {
         dec.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
     }
     return java.io.ByteArrayOutputStream().also { bmp.compress(Bitmap.CompressFormat.JPEG, 85, it) }.toByteArray()
+}
+
+/** The Echo's whole settings page (the one on the laptop), inside the app, over home Wi-Fi or Tailscale. */
+@Composable
+fun SettingsWeb(model: PuffModel, onClose: () -> Unit) {
+    var url by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(Unit) { url = model.hub.settingsUrl() }
+    androidx.compose.ui.window.Dialog(onDismissRequest = onClose, properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)) {
+        Column(Modifier.fillMaxSize().background(Pal.night)) {
+            Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text("Echo settings", color = Pal.amber, fontSize = 18.sp, modifier = Modifier.weight(1f))
+                Chip("Done") { onClose() }
+            }
+            val u = url
+            if (u == null) Small("Finding the Echo…")
+            else androidx.compose.ui.viewinterop.AndroidView(factory = { c ->
+                android.webkit.WebView(c).apply {
+                    @android.annotation.SuppressLint("SetJavaScriptEnabled")
+                    settings.javaScriptEnabled = true
+                    settings.domStorageEnabled = true
+                    setBackgroundColor(android.graphics.Color.parseColor("#0E0B14"))
+                    webViewClient = android.webkit.WebViewClient()
+                    loadUrl(u)
+                }
+            }, modifier = Modifier.fillMaxSize())
+        }
+    }
+}
+
+/** "Announce…" from the quick tile: one line to say on the Echo. */
+@Composable
+fun AnnounceDialog(model: PuffModel, onClose: () -> Unit) {
+    var text by remember { mutableStateOf("") }
+    androidx.compose.material3.AlertDialog(onDismissRequest = onClose, containerColor = Pal.card,
+        title = { Text("Say on the Echo", color = Pal.ink) },
+        text = { OutlinedTextField(text, { text = it.take(300) }, label = { Text("Dinner's ready!") }, modifier = Modifier.fillMaxWidth()) },
+        confirmButton = { androidx.compose.material3.TextButton(onClick = {
+            if (text.isNotBlank()) model.act("announce", buildJsonObject { put("action", "announce"); put("text", text) }, "Announced on the Echo")
+            onClose()
+        }) { Text("Announce") } },
+        dismissButton = { androidx.compose.material3.TextButton(onClick = onClose) { Text("Cancel") } })
 }
