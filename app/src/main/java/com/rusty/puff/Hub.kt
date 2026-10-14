@@ -107,6 +107,20 @@ class Hub(context: Context) {
         }.getOrNull()
     }
 
+    /** The Echo's screen right now: the picture (null if it isn't showing), and how old it is in seconds. */
+    suspend fun screen(): Pair<Bitmap?, Int> = withContext(Dispatchers.IO) {
+        val b = base()
+        runCatching {
+            http.newCall(authed("$b/phone/screen").build()).execute().use { r ->
+                val age = r.header("X-Age-S")?.toIntOrNull() ?: 0
+                if (r.code == 200) r.body?.bytes()?.let { BitmapFactory.decodeByteArray(it, 0, it.size) } to age else null to -1
+            }
+        }.getOrDefault(null to -1)
+    }
+
+    /** Ask the Echo to send pictures every second for a while (renewed every few seconds while watching). */
+    suspend fun watchScreen() = post("/phone/screen/watch", buildJsonObject { }).first
+
     suspend fun sendPhoto(jpeg: ByteArray, dest: String, caption: String): Boolean = withContext(Dispatchers.IO) {
         val b = base()
         runCatching {

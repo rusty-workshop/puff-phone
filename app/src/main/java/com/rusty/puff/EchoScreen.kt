@@ -52,6 +52,7 @@ fun EchoScreen(model: PuffModel) {
     var notify by remember { mutableStateOf<Map<String, Boolean>?>(null) }
     var update by remember { mutableStateOf<AppRelease?>(null) }
     var photo by remember { mutableStateOf<Uri?>(null) }
+    var live by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         notify = runCatching { model.hub.prefsOnHub() }.getOrNull()
         update = runCatching { model.hub.latestApp() }.getOrNull()?.takeIf { it.code > BuildConfig.VERSION_CODE }
@@ -74,6 +75,10 @@ fun EchoScreen(model: PuffModel) {
                 Text("⬆️ An update for this app is ready (${u.version})", color = Pal.teal, fontSize = 15.sp); Small("Tap to download and install it")
             }
         }
+
+        Section("See the Echo")
+        Chip("📺 Live screen (tap and swipe through)", true) { live = true }
+        if (live) LiveScreen(model) { live = false }
 
         Section("Send a photo")
         if (photo == null) Chip("🖼️ Pick a photo") { pick.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }

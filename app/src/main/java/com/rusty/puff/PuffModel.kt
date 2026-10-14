@@ -98,7 +98,7 @@ class PuffModel(private val context: Context) {
     fun act(what: String, body: JsonObject, done: String) {
         scope.launch {
             val (ok, msg) = try { hub.act(body) } catch (e: Hub.Unpaired) { _paired.value = false; false to "the pairing was reset" }
-            say(if (ok) done else "Couldn't: ${msg.take(80)}")
+            if (!ok || done.isNotBlank()) say(if (ok) done else "Couldn't: ${msg.take(80)}")
             if (ok) { delay(1_500); refreshState(); if (what == "settings") { delay(5_000); refreshSettings() } }
         }
     }
