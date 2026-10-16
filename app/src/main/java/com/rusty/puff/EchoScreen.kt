@@ -164,7 +164,7 @@ fun EchoScreen(model: PuffModel) {
         Section("Notifications")
         val n = notify
         if (n == null) Small("Loading…")
-        else listOf("letters" to "Letters", "stickers" to "Stickers", "cards" to "Holiday cards", "snow" to "The first snow", "weekly" to "Weekly report", "visitor" to "Someone's here?").forEach { (k, l) ->
+        else listOf("letters" to "Letters", "stickers" to "Stickers", "cards" to "Holiday cards", "snow" to "The first snow", "weekly" to "Weekly report", "visitor" to "Someone's here?", "debate" to "Umbrella or raincoat?", "mystery" to "Mystery visitor", "costume" to "New costume").forEach { (k, l) ->
             Toggle(l, "", n[k] != false) { on ->
                 notify = n + (k to on)
                 scope.launch { if (!model.hub.setPref(k, on)) model.say("Couldn't save that") }

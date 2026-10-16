@@ -74,12 +74,17 @@ fun HomeScreen(model: PuffModel) {
                 ChipRow { blob.vote.forEach { a -> Chip(a.name, color = Pal.amber) { model.act("vote", buildJsonObject { put("action", "vote"); put("id", a.id) }, "Voted for ${a.name}! 🏆") } } }
             }
         }
+        world?.journal?.friends?.let { w -> DebateCard(model, w); MysteryCard(model, w) }
         Section("Do something")
         ChipRow {
             Chip("👋 Poke") { model.act("poke", buildJsonObject { put("action", "poke") }, "${model.blobName} felt that! 👋") }
             Chip("🚶 Invite a friend") { sheet = "invite" }
             Chip("🎁 Send a gift") { sheet = "gift" }
             Chip("✨ Make something happen") { sheet = "happen" }
+            Chip("🥠 Fortune cookie") { model.act("fortune", buildJsonObject { put("action", "fortune") }, "Cracking it open on the Echo… 🥠") }
+            Chip("✉️ Write to ${model.blobName}") { sheet = "letter" }
+            Chip("👗 Closet") { sheet = "closet" }
+            Chip("🐾 Pet tricks") { sheet = "tricks" }
         }
         reply?.state?.timers?.takeIf { it.isNotEmpty() }?.let { timers ->
             Section("Timers on the Echo")
@@ -94,6 +99,9 @@ fun HomeScreen(model: PuffModel) {
         "invite" -> InviteSheet(model, world?.journal?.friends?.friends.orEmpty()) { sheet = null }
         "gift" -> GiftSheet(model) { sheet = null }
         "happen" -> HappenSheet(model) { sheet = null }
+        "letter" -> LetterSheet(model) { sheet = null }
+        "closet" -> ClosetSheet(model, world?.journal?.friends ?: World()) { sheet = null }
+        "tricks" -> TricksSheet(model, world?.journal?.friends ?: World()) { sheet = null }
     }
 }
 

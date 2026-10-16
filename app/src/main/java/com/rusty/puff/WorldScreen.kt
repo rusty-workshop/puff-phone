@@ -41,7 +41,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 private val SECTIONS = listOf("diary" to "📔 Diary", "letters" to "✉️ Letters", "comics" to "📰 Comics", "gazette" to "🗞️ Gazette",
     "album" to "📸 Album", "friends" to "👯 Friends", "dreams" to "💭 Dreams", "cookbook" to "🍳 Cookbook", "books" to "📚 Books",
-    "stickers" to "🏅 Stickers", "cabinet" to "🗄️ Cabinet", "weather" to "📅 Weather", "stars" to "🔭 Stars")
+    "stickers" to "🏅 Stickers", "cabinet" to "🗄️ Cabinet", "weather" to "📅 Weather", "stars" to "🔭 Stars",
+    "fortunes" to "🥠 Fortunes", "radio" to "📻 Radio")
 
 @Composable
 fun WorldScreen(model: PuffModel) {
@@ -163,6 +164,8 @@ fun WorldScreen(model: PuffModel) {
                 }
             }
             "weather" -> WeatherMonth(w.weatherDays)
+            "fortunes" -> TextList(w.fortunes.reversed().map { "🥠 ${prettyDate(it.date)}" to it.text }, "The jar's empty: crack one open from the Puff tab.")
+            "radio" -> TextList(w.radio.reversed().map { "📻 ${prettyDate(it.date)}" to it.lines.joinToString("\n") }, "No shows yet: ${model.blobName} goes on air in the evening.")
             "stars" -> TextList(w.constellations.reversed().map { "⭐ ${it.name}" to "${it.shape}\n${it.by}, ${prettyDate(it.date)}" }, "None named yet (on clear nights).")
         }
     }

@@ -83,6 +83,8 @@ fun PlayScreen(model: PuffModel) {
         Spacer(Modifier.height(16.dp))
         if (game == "ttt") TicTacToe(name, result, onDone = { finish(it, "tic-tac-toe") }, onReset = { result = "" })
         else Rps(name, result) { finish(it, "rock-paper-scissors") }
+        val world by model.world.collectAsStateWithLifecycle()
+        TriviaSection(model, world?.journal?.friends?.trivia)
         Section("Or have a friend over to play")
         ChipRow {
             listOf("tictactoe" to "⭕ Tic-tac-toe", "boardgame" to "🎲 Snakes and ladders", "catch" to "⚾ Catch", "hideseek" to "🙈 Hide and seek").forEach { (a, l) ->

@@ -120,7 +120,17 @@ data class Friend(
 @Serializable data class Constellation(val name: String, val shape: String, val by: String, val date: String)
 @Serializable data class HolidayCard(val holiday: String, val date: String, val text: String, val from: String)
 @Serializable data class PenPal(val name: String, val place: String, val bio: String = "")
-@Serializable data class Pet(val kind: String, val name: String = "", val rosettes: List<String> = emptyList())
+@Serializable data class Pet(val kind: String, val name: String = "", val rosettes: List<String> = emptyList(),
+    val tricks: Map<String, Int> = emptyMap(), val practised: List<String> = emptyList()) {
+    val label get() = when (kind) { "snail" -> "snail"; "sprout" -> "sprout"; else -> "goldfish" }
+}
+@Serializable data class Fortune(val date: String, val text: String)
+@Serializable data class Debate(val date: String, val friendId: String, val puff: String, val friend: String, val choice: String = "", val by: String = "")
+@Serializable data class Mystery(val friendId: String, val date: String, val clues: List<String> = emptyList(), val guesses: List<String> = emptyList(),
+    val solved: Boolean = false, val revealed: Boolean = false) { val open get() = !solved && !revealed }
+@Serializable data class TriviaRound(val date: String, val theme: String, val score: Int)
+@Serializable data class TriviaStats(val played: Int = 0, val bestScore: Int = 0, val streak: Int = 0, val bestStreak: Int = 0, val rounds: List<TriviaRound> = emptyList())
+@Serializable data class RadioShow(val date: String, val lines: List<String> = emptyList())
 @Serializable data class Building(val startDate: String, val friendId: String = "")
 @Serializable data class Postcard(val friendId: String, val text: String, val date: String)
 
@@ -145,6 +155,13 @@ data class World(
     val weatherDays: Map<String, String> = emptyMap(),
     val boardWins: Map<String, Int> = emptyMap(),
     val upgrades: Map<String, Int> = emptyMap(),
+    val fortunes: List<Fortune> = emptyList(),
+    val debate: Debate? = null,
+    val mystery: Mystery? = null,
+    val trivia: TriviaStats = TriviaStats(),
+    val radio: List<RadioShow> = emptyList(),
+    val wardrobe: List<String> = emptyList(),
+    val outfit: String = "",
 )
 
 @Serializable
