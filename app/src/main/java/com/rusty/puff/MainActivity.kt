@@ -63,6 +63,8 @@ class MainActivity : ComponentActivity() {
             askNotify.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
         Notify.channels(this)
+        Leave.channel(this)
+        ListenService.start(this)
         intent?.getStringExtra("open")?.let { Opening.what.value = it }
         Sync.schedule(this)
         setContent {

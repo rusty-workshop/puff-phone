@@ -78,6 +78,18 @@ fun EchoScreen(model: PuffModel) {
             }
         }
 
+        val journal = model.world.collectAsStateWithLifecycle().value?.journal
+        journal?.agenda?.let { AgendaCard(it) }
+        journal?.takeIf { it.weekRecap.isNotBlank() }?.let { j ->
+            Section("📰 Your week")
+            var open by remember { mutableStateOf(false) }
+            Card(onClick = { open = !open }) {
+                Small(java.text.SimpleDateFormat("EEEE, MMM d", java.util.Locale.US).format(java.util.Date(j.weekRecapMs)))
+                Text(j.weekRecap, color = Pal.ink, fontSize = 15.sp, lineHeight = 21.sp, maxLines = if (open) Int.MAX_VALUE else 4,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+            }
+        }
+
         Section("See the Echo")
         ChipRow {
             Chip("📺 Live screen", true) { live = true }
@@ -152,11 +164,18 @@ fun EchoScreen(model: PuffModel) {
         Section("Notifications")
         val n = notify
         if (n == null) Small("Loading…")
-        else listOf("letters" to "Letters", "stickers" to "Stickers", "cards" to "Holiday cards", "snow" to "The first snow").forEach { (k, l) ->
+        else listOf("letters" to "Letters", "stickers" to "Stickers", "cards" to "Holiday cards", "snow" to "The first snow", "weekly" to "Weekly report").forEach { (k, l) ->
             Toggle(l, "", n[k] != false) { on ->
                 notify = n + (k to on)
                 scope.launch { if (!model.hub.setPref(k, on)) model.say("Couldn't save that") }
             }
+        }
+
+        Section("Find my phone")
+        var findOn by remember { mutableStateOf(ListenService.enabled(ctx)) }
+        Toggle("Let the Echo ring this phone", "\"where's my phone?\" or 📱 on the Echo: it rings loudly for a minute, even on silent. Keeps a quiet notification while it listens.", findOn) {
+            findOn = it
+            ListenService.setEnabled(ctx, it)
         }
 
         Section("This phone")
@@ -225,4 +244,41 @@ fun AnnounceDialog(model: PuffModel, onClose: () -> Unit) {
             onClose()
         }) { Text("Announce") } },
         dismissButton = { androidx.compose.material3.TextButton(onClick = onClose) { Text("Cancel") } })
+}
+
+/** Today's events from the Echo's agenda page, with when to leave, and the next few days. */
+@Composable
+private fun AgendaCard(a: AgendaInfo) {
+    val today = java.time.LocalDate.now().toString()
+    Section("📅 Today")
+    Card {
+        val items = if (a.day == today) a.items else emptyList()
+        if (items.isEmpty()) Small(if (a.day == today) "Nothing on today" else "The Echo hasn't checked today's calendars yet")
+        items.forEach { i ->
+            Row(Modifier.padding(vertical = 3.dp)) {
+                Text(i.time.ifBlank { "·" }, color = Pal.teal, fontSize = 14.sp, modifier = Modifier.padding(end = 10.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(i.title, color = Pal.ink, fontSize = 15.sp)
+                    i.leaveMin?.let { m -> Small("🚗 Leave by " + clock(m), Pal.amber) }
+                    if (i.location.isNotBlank()) Small(i.location)
+                }
+            }
+        }
+        val later = a.upcoming.filter { it.date > today || it.date.length != 10 }
+        if (later.isNotEmpty()) {
+            Spacer(Modifier.height(8.dp))
+            Small("Coming up", Pal.amber)
+            later.forEach { d ->
+                val label = runCatching { java.time.LocalDate.parse(d.date).dayOfWeek.getDisplayName(java.time.format.TextStyle.FULL, java.util.Locale.US) }.getOrDefault(d.date)
+                Text(label, color = Pal.muted, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 4.dp))
+                d.items.forEach { i -> Text((if (i.time.isNotBlank()) i.time + "  " else "") + i.title, color = Pal.ink, fontSize = 14.sp) }
+            }
+        }
+    }
+}
+
+private fun clock(minuteOfDay: Int): String {
+    val h = (minuteOfDay / 60).mod(24)
+    val m = minuteOfDay.mod(60)
+    return "%d:%02d %s".format(if (h % 12 == 0) 12 else h % 12, m, if (h < 12) "AM" else "PM")
 }

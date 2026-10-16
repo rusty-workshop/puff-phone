@@ -26,6 +26,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         if (!hub.paired) return Result.success()
         try {
             checkEvents(applicationContext, hub)
+            refreshAgenda(applicationContext, hub)
         } catch (e: Hub.Unpaired) {
             return Result.success()
         }
@@ -42,6 +43,18 @@ object Sync {
     }
 }
 
+/** Keep the leave-now alarms in step with the Echo's agenda (the cached world, refreshed if it changed). */
+suspend fun refreshAgenda(context: Context, hub: Hub) {
+    val file = java.io.File(context.filesDir, "world.json")
+    val cached = runCatching { HubJson.decodeFromString(WorldReply.serializer(), file.readText()) }.getOrNull()
+    val w = hub.world(cached?.at ?: 0.0)
+    val fresh = if (w != null && !w.unchanged && w.journal != null) {
+        runCatching { file.writeText(HubJson.encodeToString(WorldReply.serializer(), w)) }
+        w
+    } else cached
+    fresh?.journal?.agenda?.let { Leave.schedule(context, it) }
+}
+
 /** Notifications for what echo-hub noticed (the first check only remembers where it's up to). */
 suspend fun checkEvents(context: Context, hub: Hub) {
     val prefs = context.getSharedPreferences("puff", Context.MODE_PRIVATE)
@@ -55,7 +68,7 @@ suspend fun checkEvents(context: Context, hub: Hub) {
 }
 
 object Notify {
-    private val CHANNELS = listOf("letters" to "Letters", "stickers" to "Stickers", "cards" to "Holiday cards", "snow" to "The first snow")
+    private val CHANNELS = listOf("letters" to "Letters", "stickers" to "Stickers", "cards" to "Holiday cards", "snow" to "The first snow", "weekly" to "Weekly report")
 
     fun channels(context: Context) {
         val nm = context.getSystemService(NotificationManager::class.java)

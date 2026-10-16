@@ -73,6 +73,7 @@ class PuffModel(private val context: Context) {
         val w = hub.world(_world.value?.at ?: 0.0) ?: return
         if (w.unchanged || w.journal == null) return
         _world.value = w
+        w.journal?.agenda?.let { Leave.schedule(context, it) }
         withContext(Dispatchers.IO) { runCatching { cacheFile().writeText(HubJson.encodeToString(WorldReply.serializer(), w)) } }
     }
 

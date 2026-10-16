@@ -61,7 +61,30 @@ data class Journal(
     val catalog: Catalog = Catalog(),
     @SerialName("friend_album") val friendAlbum: List<AlbumNote> = emptyList(),
     val remote: RemoteInfo = RemoteInfo(),
+    val agenda: AgendaInfo = AgendaInfo(),
+    @SerialName("week_recap") val weekRecap: String = "",
+    @SerialName("week_recap_ms") val weekRecapMs: Long = 0,
 )
+
+/** The Echo's agenda page: today's events (with when to leave, for ones with an address) and the next few days. */
+@Serializable
+data class AgendaInfo(
+    val date: String = "",
+    /** yyyy-MM-dd when the list is today's, else blank. */
+    val day: String = "",
+    @SerialName("updated_ms") val updatedMs: Long = 0,
+    val items: List<AgendaEntry> = emptyList(),
+    val upcoming: List<AgendaLater> = emptyList(),
+)
+
+@Serializable
+data class RingReply(val ring: Double? = null, val now: Double = 0.0)
+
+@Serializable
+data class AgendaEntry(val time: String = "", val title: String = "", val location: String = "", @SerialName("leave_min") val leaveMin: Int? = null)
+
+@Serializable
+data class AgendaLater(val date: String = "", val items: List<AgendaEntry> = emptyList())
 
 @Serializable data class DiaryEntry(val date: String, val text: String)
 @Serializable data class Thing(val date: String = "", val title: String = "", val text: String = "", val kind: String = "")

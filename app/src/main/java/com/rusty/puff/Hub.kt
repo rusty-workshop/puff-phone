@@ -143,4 +143,7 @@ class Hub(context: Context) {
 
     /** The Echo's full settings page (it's on the same address). */
     suspend fun settingsUrl() = base() + "/settings"
+
+    /** Held open by echo-hub until the Echo asks to ring this phone (newer than [after]) or ~50 s pass. */
+    suspend fun waitForRing(after: Double): RingReply? = get("/phone/wait?after=$after", RingReply.serializer())
 }
