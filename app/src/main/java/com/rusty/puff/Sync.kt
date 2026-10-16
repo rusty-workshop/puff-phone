@@ -18,6 +18,7 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.launch
 
 /** Every 15 minutes (as often as Android allows): new things to notify about, and the widget. */
 class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
@@ -68,7 +69,7 @@ suspend fun checkEvents(context: Context, hub: Hub) {
 }
 
 object Notify {
-    private val CHANNELS = listOf("letters" to "Letters", "stickers" to "Stickers", "cards" to "Holiday cards", "snow" to "The first snow", "weekly" to "Weekly report")
+    private val CHANNELS = listOf("letters" to "Letters", "stickers" to "Stickers", "cards" to "Holiday cards", "snow" to "The first snow", "weekly" to "Weekly report", "visitor" to "Someone's here?")
 
     fun channels(context: Context) {
         val nm = context.getSystemService(NotificationManager::class.java)
@@ -91,7 +92,32 @@ object Notify {
             .setStyle(NotificationCompat.BigTextStyle().bigText(e.body))
             .setContentIntent(open)
             .setAutoCancel(true)
+            .apply {
+                if (e.kind == "visitor") addAction(0, "Turn on guest mode", PendingIntent.getBroadcast(context, e.id,
+                    Intent(context, GuestReceiver::class.java).putExtra("note", e.id), PendingIntent.FLAG_IMMUTABLE))
+            }
             .build()
         NotificationManagerCompat.from(context).notify(e.id, n)
+    }
+}
+
+/** "Turn on guest mode" on a someone's-here notification: 4 hours, like the Echo's own button. */
+class GuestReceiver : android.content.BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        val pending = goAsync()
+        val note = intent.getIntExtra("note", 0)
+        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+            val ok = runCatching {
+                Hub(context).act(kotlinx.serialization.json.buildJsonObject {
+                    put("action", kotlinx.serialization.json.JsonPrimitive("settings"))
+                    put("changes", kotlinx.serialization.json.buildJsonObject { put("guest_hours", kotlinx.serialization.json.JsonPrimitive(4)) })
+                }).first
+            }.getOrDefault(false)
+            NotificationManagerCompat.from(context).cancel(note)
+            if (!ok) android.os.Handler(android.os.Looper.getMainLooper()).post {
+                android.widget.Toast.makeText(context, "Couldn't reach the Echo", android.widget.Toast.LENGTH_SHORT).show()
+            }
+            pending.finish()
+        }
     }
 }

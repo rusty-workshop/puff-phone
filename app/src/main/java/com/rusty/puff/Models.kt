@@ -78,7 +78,7 @@ data class AgendaInfo(
 )
 
 @Serializable
-data class RingReply(val ring: Double? = null, val now: Double = 0.0)
+data class RingReply(val ring: Double? = null, val events: Int = -1, val now: Double = 0.0)
 
 @Serializable
 data class AgendaEntry(val time: String = "", val title: String = "", val location: String = "", @SerialName("leave_min") val leaveMin: Int? = null)

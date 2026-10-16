@@ -69,13 +69,16 @@ class ListenService : Service() {
         var backoff = 5_000L
         while (scope.isActive) {
             if (!hub.paired || !enabled(this)) { stopSelf(); return }
-            val r = try { hub.waitForRing(after) } catch (e: Hub.Unpaired) { stopSelf(); return }
+            val seen = prefs.getInt("last_event", -1)
+            val r = try { hub.waitForRing(after, seen) } catch (e: Hub.Unpaired) { stopSelf(); return }
             if (r == null) {
                 delay(backoff)
                 backoff = (backoff * 2).coerceAtMost(60_000)
                 continue
             }
             backoff = 5_000
+            // Something to notify about (someone's here...): straight away rather than at the next sync.
+            if (seen >= 0 && r.events > seen) runCatching { checkEvents(this, hub) }
             r.ring?.let { at ->
                 after = at
                 prefs.edit().putString("ring_after", at.toString()).apply()
