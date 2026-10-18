@@ -69,7 +69,7 @@ suspend fun checkEvents(context: Context, hub: Hub) {
 }
 
 object Notify {
-    private val CHANNELS = listOf("letters" to "Letters", "stickers" to "Stickers", "cards" to "Holiday cards", "snow" to "The first snow", "weekly" to "Weekly report", "visitor" to "Someone's here?", "debate" to "Umbrella or raincoat?", "mystery" to "Mystery visitor", "costume" to "New costume")
+    private val CHANNELS = listOf("letters" to "Letters", "stickers" to "Stickers", "cards" to "Holiday cards", "snow" to "The first snow", "weekly" to "Weekly report", "visitor" to "Someone's here?", "costume" to "New costume")
 
     fun channels(context: Context) {
         val nm = context.getSystemService(NotificationManager::class.java)

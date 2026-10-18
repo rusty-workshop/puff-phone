@@ -66,15 +66,6 @@ fun HomeScreen(model: PuffModel) {
         Text(blob.doing.ifBlank { "…" }, color = Pal.ink, fontSize = 16.sp, modifier = Modifier.padding(top = 2.dp))
         Spacer(Modifier.height(12.dp))
         LivePuff(model, blob)
-        // The talent show's vote, while it's open on the Echo.
-        if (blob.vote.isNotEmpty()) {
-            Card {
-                Text("🎭 Who was best at the talent show?", color = Pal.ink, fontSize = 16.sp)
-                Spacer(Modifier.height(8.dp))
-                ChipRow { blob.vote.forEach { a -> Chip(a.name, color = Pal.amber) { model.act("vote", buildJsonObject { put("action", "vote"); put("id", a.id) }, "Voted for ${a.name}! 🏆") } } }
-            }
-        }
-        world?.journal?.friends?.let { w -> DebateCard(model, w); MysteryCard(model, w) }
         Section("Do something")
         ChipRow {
             Chip("👋 Poke") { model.act("poke", buildJsonObject { put("action", "poke") }, "${model.blobName} felt that! 👋") }
@@ -84,7 +75,6 @@ fun HomeScreen(model: PuffModel) {
             Chip("🥠 Fortune cookie") { model.act("fortune", buildJsonObject { put("action", "fortune") }, "Cracking it open on the Echo… 🥠") }
             Chip("✉️ Write to ${model.blobName}") { sheet = "letter" }
             Chip("👗 Closet") { sheet = "closet" }
-            Chip("🐾 Pet tricks") { sheet = "tricks" }
         }
         reply?.state?.timers?.takeIf { it.isNotEmpty() }?.let { timers ->
             Section("Timers on the Echo")
@@ -101,7 +91,6 @@ fun HomeScreen(model: PuffModel) {
         "happen" -> HappenSheet(model) { sheet = null }
         "letter" -> LetterSheet(model) { sheet = null }
         "closet" -> ClosetSheet(model, world?.journal?.friends ?: World()) { sheet = null }
-        "tricks" -> TricksSheet(model, world?.journal?.friends ?: World()) { sheet = null }
     }
 }
 
@@ -228,7 +217,7 @@ private fun HappenSheet(model: PuffModel, onClose: () -> Unit) {
     ModalBottomSheet(onDismissRequest = onClose, containerColor = Pal.night) {
         Column(Modifier.padding(16.dp).verticalScroll(rememberScrollState())) {
             Text("Make something happen", color = Pal.ink, fontSize = 20.sp)
-            Small("Pixel writes the words, so letters and comics take a minute or two.")
+            Small("Pixel writes the words, so letters take a minute or two.")
             Spacer(Modifier.height(8.dp))
             FlowChips(HAPPENINGS, null) { v ->
                 model.act("play", buildJsonObject { put("action", "play"); put("value", v) }, "On it! Watch the Echo ✨")

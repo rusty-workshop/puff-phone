@@ -58,7 +58,7 @@ fun StreetScreen(model: PuffModel) {
         Small(when (st.festival) {
             "FAIR" -> "🍎 Harvest fair today!"
             "PARADE" -> "🏮 Winter lights parade tonight!"
-            else -> if (st.market) "🧺 Market day: stalls are out" else "Tap a house to look inside, or invite someone over."
+            else -> "Tap a house to look inside, or invite someone over."
         }, if (st.festival != null) Pal.amber else Pal.muted)
         Spacer(Modifier.height(12.dp))
         val sky = when (hour) {
@@ -85,9 +85,9 @@ fun StreetScreen(model: PuffModel) {
                     }
                 }
                 Column(Modifier.width(110.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(if (st.activity == "picnic") "🧺🌳" else "🌳🦆", fontSize = 40.sp)
+                    Text("🌳🦆", fontSize = 40.sp)
                     Text("The park", color = Color(0xFF7FC88A), fontSize = 13.sp)
-                    Small(if (st.activity == "picnic") "picnic!" else "quiet")
+                    Small("quiet")
                 }
             }
         }
@@ -109,7 +109,6 @@ fun StreetScreen(model: PuffModel) {
                 Column {
                     Small("${f.personality.lowercase()} · ${WHERE_LABEL[where] ?: where} · closeness ${f.closeness}/100")
                     if (f.bio.isNotBlank()) Body(f.bio)
-                    if (f.petKind.isNotBlank()) Small("Pet: ${f.petName.ifBlank { "a" }} ${f.petKind}")
                     if (f.birthday.isNotBlank()) Small("🎂 Birthday: ${f.birthday}")
                 }
             },

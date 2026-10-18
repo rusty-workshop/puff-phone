@@ -39,10 +39,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
-private val SECTIONS = listOf("diary" to "📔 Diary", "letters" to "✉️ Letters", "comics" to "📰 Comics", "gazette" to "🗞️ Gazette",
-    "album" to "📸 Album", "friends" to "👯 Friends", "dreams" to "💭 Dreams", "cookbook" to "🍳 Cookbook", "books" to "📚 Books",
-    "stickers" to "🏅 Stickers", "cabinet" to "🗄️ Cabinet", "weather" to "📅 Weather", "stars" to "🔭 Stars",
-    "fortunes" to "🥠 Fortunes", "radio" to "📻 Radio")
+private val SECTIONS = listOf("diary" to "📔 Diary", "letters" to "✉️ Letters", "album" to "📸 Album", "friends" to "👯 Friends",
+    "books" to "📚 Books", "stickers" to "🏅 Stickers", "weather" to "📅 Weather", "stars" to "🔭 Stars", "fortunes" to "🥠 Fortunes")
 
 @Composable
 fun WorldScreen(model: PuffModel) {
@@ -62,7 +60,6 @@ fun WorldScreen(model: PuffModel) {
         val names = w.friends.associate { it.id to it.shownName } + ("rusty" to "you") + ("penpal" to (w.penpal?.name ?: "the pen pal"))
         when (section) {
             "diary" -> TextList(j.diary.reversed().map { prettyDate(it.date) to it.text }, "Nothing yet: it's written in the evening.")
-            "dreams" -> TextList(w.dreams.reversed().map { prettyDate(it.date) to it.text }, "No dreams written down yet.", italic = true)
             "letters" -> LazyColumn {
                 if (w.letters.isEmpty()) item { Empty("No letters yet.") }
                 items(w.letters.reversed()) { l ->
@@ -78,62 +75,17 @@ fun WorldScreen(model: PuffModel) {
                     }
                 }
             }
-            "comics" -> LazyColumn {
-                if (w.comics.isEmpty()) item { Empty("No comics yet: drawn after 8 pm.") }
-                items(w.comics.reversed()) { c ->
-                    Card {
-                        Text(c.title, color = Pal.ink, fontSize = 16.sp, fontWeight = FontWeight.SemiBold); Small(prettyDate(c.date))
-                        Spacer(Modifier.height(6.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            c.panels.take(3).forEachIndexed { i, p ->
-                                Column(Modifier.weight(1f).background(Pal.night, RoundedCornerShape(8.dp)).padding(6.dp)) {
-                                    Small("${i + 1}. ${p.who.joinToString()}")
-                                    if (p.caption.isNotBlank()) Text(p.caption, color = Color.Black, fontSize = 11.sp, modifier = Modifier.background(Color(0xFFFFE680), RoundedCornerShape(3.dp)).padding(2.dp))
-                                    if (p.speech.isNotBlank()) Text("“${p.speech}”", color = Pal.ink, fontSize = 12.sp)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            "gazette" -> LazyColumn {
-                if (w.gazettes.isEmpty()) item { Empty("The Blob Gazette comes out on Sunday evenings.") }
-                items(w.gazettes.reversed()) { g ->
-                    Column(Modifier.fillMaxWidth().padding(bottom = 10.dp).background(Color(0xFFF2EADA), RoundedCornerShape(6.dp)).padding(12.dp)) {
-                        val ink = Color(0xFF2A2420)
-                        Text("THE BLOB GAZETTE · ${prettyDate(g.date)}", color = ink.copy(alpha = 0.7f), fontSize = 11.sp, fontFamily = androidx.compose.ui.text.font.FontFamily.Serif)
-                        Text(g.headline, color = ink, fontSize = 19.sp, fontWeight = FontWeight.Bold, fontFamily = androidx.compose.ui.text.font.FontFamily.Serif)
-                        g.articles.forEach { a ->
-                            Text(a.title, color = ink, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 6.dp))
-                            Text(a.text, color = ink.copy(alpha = 0.85f), fontSize = 13.sp)
-                        }
-                        if (g.weather.isNotBlank()) Text("☁️ ${g.weather}", color = ink.copy(alpha = 0.7f), fontSize = 12.sp, modifier = Modifier.padding(top = 6.dp))
-                    }
-                }
-            }
             "album" -> AlbumGrid(model)
             "friends" -> LazyColumn {
                 items(w.friends.filter { it.name.isNotBlank() }) { f ->
                     val diary = w.diary.filter { it.friendId == f.id }.reversed()
                     Card(onClick = { reading = f.shownName to (f.bio + "\n\n" + diary.joinToString("\n\n") { "${prettyDate(it.date)}: ${it.text}" }).trim() }) {
                         Text("● ${f.shownName}", color = Color(f.color), fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-                        Small("${f.personality.lowercase()} · closeness ${f.closeness}/100 · ${f.visits} visits" + if (f.trophies > 0) " · 🏆${f.trophies}" else "")
+                        Small("${f.personality.lowercase()} · closeness ${f.closeness}/100 · ${f.visits} visits")
                         if (f.bio.isNotBlank()) Body(f.bio)
                     }
                 }
                 w.penpal?.let { p -> item { Card { Text("🌍 ${p.name}, the pen pal", color = Pal.teal, fontSize = 16.sp); Small(p.place); Body(p.bio) } } }
-            }
-            "cookbook" -> LazyColumn {
-                if (w.recipes.isEmpty()) item { Empty("Nothing baked yet.") }
-                items(w.recipes.reversed()) { r ->
-                    Card(onClick = {
-                        reading = r.title to ("By ${r.cooks}, ${prettyDate(r.date)}" + (if (r.real) "\nA real recipe you can make!" else "") +
-                            "\n\nIngredients\n" + r.ingredients.joinToString("\n") { "• $it" } + "\n\nSteps\n" + r.steps.mapIndexed { i, s -> "${i + 1}. $s" }.joinToString("\n"))
-                    }) {
-                        Text((if (r.real) "🧑‍🍳 " else "🧁 ") + r.title, color = Pal.ink, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
-                        Small("${r.cooks} · ${prettyDate(r.date)}" + if (r.real) " · real recipe" else "")
-                    }
-                }
             }
             "books" -> TextList(w.books.reversed().map { "📖 ${it.title}" to "${it.reader}: ${it.review}" }, "No books yet.")
             "stickers" -> LazyVerticalGrid(GridCells.Fixed(3), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -147,25 +99,8 @@ fun WorldScreen(model: PuffModel) {
                     }
                 }
             }
-            "cabinet" -> LazyColumn {
-                j.catalog.collectibles.groupBy { it.set }.forEach { (set, list) ->
-                    item {
-                        Section(set)
-                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            list.forEach { c ->
-                                val got = w.collection[c.id] != null
-                                Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text(if (got) c.emoji else "❔", fontSize = 24.sp)
-                                    Text(if (got) c.name else "???", color = if (got) Pal.ink else Pal.muted, fontSize = 10.sp, textAlign = TextAlign.Center, maxLines = 2)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
             "weather" -> WeatherMonth(w.weatherDays)
             "fortunes" -> TextList(w.fortunes.reversed().map { "🥠 ${prettyDate(it.date)}" to it.text }, "The jar's empty: crack one open from the Puff tab.")
-            "radio" -> TextList(w.radio.reversed().map { "📻 ${prettyDate(it.date)}" to it.lines.joinToString("\n") }, "No shows yet: ${model.blobName} goes on air in the evening.")
             "stars" -> TextList(w.constellations.reversed().map { "⭐ ${it.name}" to "${it.shape}\n${it.by}, ${prettyDate(it.date)}" }, "None named yet (on clear nights).")
         }
     }

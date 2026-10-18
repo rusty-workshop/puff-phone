@@ -21,8 +21,6 @@ data class TimerInfo(val label: String = "", val kind: String = "", @SerialName(
 @Serializable
 data class Visitor(val id: String, val name: String = "", val color: String = "#FF9EC7", val scale: Float = 1f, val says: String? = null)
 
-@Serializable
-data class VoteAct(val id: String, val name: String)
 
 @Serializable
 data class BlobState(
@@ -37,7 +35,6 @@ data class BlobState(
     @SerialName("away_overnight") val awayOvernight: Boolean = false,
     val sniffles: Boolean = false,
     val asleep: Boolean = false,
-    val vote: List<VoteAct> = emptyList(),
     val visitors: List<Visitor> = emptyList(),
     val friend: String? = null,
     val laptop: LaptopNow? = null,
@@ -100,9 +97,6 @@ data class Friend(
     val closeness: Int = 0,
     val visits: Int = 0,
     val birthday: String = "",
-    val trophies: Int = 0,
-    val petKind: String = "",
-    val petName: String = "",
 ) {
     val shownName get() = name.ifBlank { "New friend" }
     val scale get() = when (personality) { "SHY" -> 0.9f; "SLEEPY" -> 1.25f; "TINY" -> 0.7f; else -> 1f }
@@ -110,27 +104,13 @@ data class Friend(
 
 @Serializable data class FriendDiaryEntry(val friendId: String, val date: String, val text: String)
 @Serializable data class Letter(val friendId: String, val date: String, val text: String, val atMs: Long, val read: Boolean = false, val fromBlob: Boolean = false)
-@Serializable data class Panel(val who: List<String> = emptyList(), val mood: String = "", val place: String = "", val speech: String = "", val caption: String = "")
-@Serializable data class Comic(val date: String, val title: String, val panels: List<Panel> = emptyList())
-@Serializable data class Article(val title: String, val text: String)
-@Serializable data class Gazette(val date: String, val headline: String, val articles: List<Article> = emptyList(), val weather: String = "")
-@Serializable data class Dream(val date: String, val text: String)
 @Serializable data class Book(val title: String, val review: String, val reader: String, val date: String)
-@Serializable data class Recipe(val title: String, val ingredients: List<String>, val steps: List<String>, val cooks: String, val date: String, val real: Boolean = false)
 @Serializable data class Constellation(val name: String, val shape: String, val by: String, val date: String)
 @Serializable data class HolidayCard(val holiday: String, val date: String, val text: String, val from: String)
 @Serializable data class PenPal(val name: String, val place: String, val bio: String = "")
-@Serializable data class Pet(val kind: String, val name: String = "", val rosettes: List<String> = emptyList(),
-    val tricks: Map<String, Int> = emptyMap(), val practised: List<String> = emptyList()) {
-    val label get() = when (kind) { "snail" -> "snail"; "sprout" -> "sprout"; else -> "goldfish" }
-}
 @Serializable data class Fortune(val date: String, val text: String)
-@Serializable data class Debate(val date: String, val friendId: String, val puff: String, val friend: String, val choice: String = "", val by: String = "")
-@Serializable data class Mystery(val friendId: String, val date: String, val clues: List<String> = emptyList(), val guesses: List<String> = emptyList(),
-    val solved: Boolean = false, val revealed: Boolean = false) { val open get() = !solved && !revealed }
 @Serializable data class TriviaRound(val date: String, val theme: String, val score: Int)
 @Serializable data class TriviaStats(val played: Int = 0, val bestScore: Int = 0, val streak: Int = 0, val bestStreak: Int = 0, val rounds: List<TriviaRound> = emptyList())
-@Serializable data class RadioShow(val date: String, val lines: List<String> = emptyList())
 @Serializable data class Building(val startDate: String, val friendId: String = "")
 @Serializable data class Postcard(val friendId: String, val text: String, val date: String)
 
@@ -140,26 +120,17 @@ data class World(
     val diary: List<FriendDiaryEntry> = emptyList(),
     val postcards: List<Postcard> = emptyList(),
     val letters: List<Letter> = emptyList(),
-    val comics: List<Comic> = emptyList(),
-    val pet: Pet? = null,
-    val dreams: List<Dream> = emptyList(),
-    val gazettes: List<Gazette> = emptyList(),
     val penpal: PenPal? = null,
     val books: List<Book> = emptyList(),
     val stickers: Map<String, String> = emptyMap(),
-    val recipes: List<Recipe> = emptyList(),
     val constellations: List<Constellation> = emptyList(),
     val building: Building? = null,
     val cards: List<HolidayCard> = emptyList(),
-    val collection: Map<String, String> = emptyMap(),
     val weatherDays: Map<String, String> = emptyMap(),
     val boardWins: Map<String, Int> = emptyMap(),
     val upgrades: Map<String, Int> = emptyMap(),
     val fortunes: List<Fortune> = emptyList(),
-    val debate: Debate? = null,
-    val mystery: Mystery? = null,
     val trivia: TriviaStats = TriviaStats(),
-    val radio: List<RadioShow> = emptyList(),
     val wardrobe: List<String> = emptyList(),
     val outfit: String = "",
 )
@@ -170,14 +141,12 @@ data class Street(
     val festival: String? = null,
     val activity: String? = null,
     @SerialName("puff_at") val puffAt: String? = null,
-    val market: Boolean = false,
     val snowman: Boolean = false,
     val hour: Int = 12,
 )
 
 @Serializable data class StickerInfo(val id: String, val emoji: String, val title: String, val who: String)
-@Serializable data class Collectible(val id: String, val emoji: String, val name: String, val set: String)
-@Serializable data class Catalog(val stickers: List<StickerInfo> = emptyList(), val collectibles: List<Collectible> = emptyList())
+@Serializable data class Catalog(val stickers: List<StickerInfo> = emptyList())
 
 // -- Albums, events, settings -----------------------------------------------------------------
 
