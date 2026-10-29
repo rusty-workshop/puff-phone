@@ -2,7 +2,7 @@
 
 The phone side of Muse Echo: Puff (the blob on the Echo Show) on an Android phone. Everything goes
 through echo-hub on the Latitude (`/phone/...`, token from the settings page's pairing QR code): over
-the home Wi-Fi when it can, otherwise over Tailscale (tailnet only, `https://latitude.taild468e3.ts.net:9094`).
+the home Wi-Fi when it can, otherwise over Tailscale (tailnet only, `https://latitude.<tailnet>.ts.net:9094`).
 
 - **Puff tab**: live Puff (mood, what it's holding, who's over, away on a trip), poke it, invite a friend, send a gift, make something happen, vote in the talent show.
 - **World**: diary, letters, comics, the Gazette, albums, friends, dreams, cookbook, bookshelf, stickers, cabinet, weather calendar, constellations.

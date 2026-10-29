@@ -9,7 +9,7 @@ import org.junit.Test
 class LogicTest {
     @Test
     fun pairingCodes() {
-        val p = PairingCode.parse("""{"puff":1,"lan":"http://192.168.1.158:8094","tailnet":"https://latitude.taild468e3.ts.net:9094","token":"0123456789abcdef0123"}""")
+        val p = PairingCode.parse("""{"puff":1,"lan":"http://192.168.1.158:8094","tailnet":"https://latitude.example.ts.net:9094","token":"0123456789abcdef0123"}""")
         assertNotNull(p)
         assertEquals("0123456789abcdef0123", p!!.token)
         assertNull(PairingCode.parse("hello"))
